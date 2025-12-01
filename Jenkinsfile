@@ -26,14 +26,12 @@ pipeline {
 
         stage('Terraform Validate') {
             steps {
-                echo "Validating Terraform code..."
                 sh "terraform validate"
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                echo "Generating Terraform plan..."
                 withAWS(credentials: 'aws-credi', region: 'eu-west-1') {
                     sh "terraform plan -out=tfplan"
                 }
@@ -42,7 +40,6 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                echo "Applying Terraform changes..."
                 withAWS(credentials: 'aws-credi', region: 'eu-west-1') {
                     sh "terraform apply -auto-approve tfplan"
                 }
@@ -52,7 +49,7 @@ pipeline {
 
     post {
         success {
-            echo "Terraform infrastructure deployed successfully!"
+            echo "Terraform deployment successful!"
         }
         failure {
             echo "Pipeline failed!"

@@ -24,6 +24,14 @@ pipeline {
             }
         }
 
+
+        stage('Terraform Destroy') {
+            steps {
+                withAWS(credentials: 'aws-credi', region: 'eu-west-1') {
+                    sh "terraform destroy -auto-approve"
+                }
+            }
+        }
         stage('Terraform Validate') {
             steps {
                 sh "terraform validate"

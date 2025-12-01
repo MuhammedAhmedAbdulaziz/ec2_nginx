@@ -101,43 +101,14 @@ resource "aws_security_group" "main_server_sg" {
 }
 
 ##########################################
-# AMI From SSM (Ubuntu 22.04)
+# AMI
 ##########################################
 
 data "aws_ssm_parameter" "ubuntu_ami" {
   name = "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
 }
 
-##########################################
-# Main Server EC2 Instance
-##########################################
 
-resource "aws_key_pair" "main_server_key" {
-  key_name   = "main-server-key"
-  public_key = file("~/.ssh/id_rsa.pub")
-}
-
-resource "aws_instance" "main_server" {
-  ami                         = data.aws_ssm_parameter.ubuntu_ami.value
-  instance_type               = "t3.small"
-  subnet_id                   = aws_subnet.public_subnet.id
-  vpc_security_group_ids      = [aws_security_group.main_server_sg.id]
-  associate_public_ip_address = true
-  key_name                    = aws_key_pair.main_server_key.key_name
-
-  tags = {
-    Name = "main-server"
-  }
-}
-
-##########################################
-# Web Server Key Pair
-##########################################
-
-resource "aws_key_pair" "web_key" {
-  key_name   = "azoz-web-key"
-  public_key = file("~/.ssh/azoz_web_key.pub")
-}
 
 ##########################################
 # Web Server EC2 (Nginx + Custom Page)
@@ -149,7 +120,6 @@ resource "aws_instance" "web_server" {
   subnet_id                   = aws_subnet.public_subnet.id
   vpc_security_group_ids      = [aws_security_group.main_server_sg.id]
   associate_public_ip_address = true
-  key_name                    = aws_key_pair.web_key.key_name
 
   user_data = <<-EOF
 #!/bin/bash

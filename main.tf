@@ -1,50 +1,49 @@
+#################################
+# Provider
+#################################
 provider "aws" {
-  region = "eu-west-1"
+  region = var.region
 }
 
-##########################################
+#################################
 # VPC
-##########################################
-
+#################################
 resource "aws_vpc" "main_server_vpc" {
-  cidr_block = "192.168.0.0/24"
+  cidr_block = var.vpc_cidr
 
   tags = {
-    Name = "main-server-vpc"
+    Name = "${var.name_prefix}-vpc"
   }
 }
 
-##########################################
+#################################
 # Public Subnet
-##########################################
-
+#################################
 resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.main_server_vpc.id
-  cidr_block              = "192.168.0.0/28"
+  cidr_block              = var.public_subnet_cidr
   map_public_ip_on_launch = true
-  availability_zone       = "eu-west-1a"
+  availability_zone       = var.availability_zone
 
   tags = {
-    Name = "main-server-public-subnet"
+    Name = "${var.name_prefix}-public-subnet"
   }
 }
 
-##########################################
+#################################
 # Internet Gateway
-##########################################
-
+#################################
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main_server_vpc.id
 
   tags = {
-    Name = "main-server-igw"
+    Name = "${var.name_prefix}-igw"
   }
 }
 
-##########################################
+#################################
 # Public Route Table
-##########################################
-
+#################################
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.main_server_vpc.id
 
@@ -54,7 +53,7 @@ resource "aws_route_table" "public_rt" {
   }
 
   tags = {
-    Name = "main-server-public-rt"
+    Name = "${var.name_prefix}-public-rt"
   }
 }
 
@@ -63,12 +62,11 @@ resource "aws_route_table_association" "public_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-##########################################
+#################################
 # Security Group
-##########################################
-
+#################################
 resource "aws_security_group" "main_server_sg" {
-  name        = "main-server-sg"
+  name        = "${var.name_prefix}-sg"
   description = "Allow SSH, HTTP"
   vpc_id      = aws_vpc.main_server_vpc.id
 
@@ -96,27 +94,23 @@ resource "aws_security_group" "main_server_sg" {
   }
 
   tags = {
-    Name = "main-server-sg"
+    Name = "${var.name_prefix}-sg"
   }
 }
 
-##########################################
-# AMI
-##########################################
-
+#################################
+# Ubuntu AMI
+#################################
 data "aws_ssm_parameter" "ubuntu_ami" {
-  name = "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
+  name = var.ubuntu_ssm_path
 }
 
-
-
-##########################################
-# Web Server EC2 (Nginx + Custom Page)
-##########################################
-
+#################################
+# EC2 Web Server
+#################################
 resource "aws_instance" "web_server" {
   ami                         = data.aws_ssm_parameter.ubuntu_ami.value
-  instance_type               = "t3.small"
+  instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public_subnet.id
   vpc_security_group_ids      = [aws_security_group.main_server_sg.id]
   associate_public_ip_address = true
@@ -143,6 +137,6 @@ systemctl enable nginx
 EOF
 
   tags = {
-    Name = "azoz-web-server"
+    Name = "${var.name_prefix}-web-server"
   }
 }
